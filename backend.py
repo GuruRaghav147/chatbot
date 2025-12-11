@@ -1,27 +1,17 @@
-import json,os
-from dotenv import load_dotenv
+import os
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-import tempfile
 from PIL import Image
 import docx
 import fitz
 import pytesseract
 
-# Tesseract Path
-pytesseract.pytesseract.tesseract_cmd = r"C:\Users\gururaghav.k\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+# Linux Tesseract Path for Render (NO WINDOWS PATHS!)
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
-# Load API Key
-# load_dotenv()
-# GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
-
-config = {
-    "VERIFY_TOKEN": os.getenv("VERIFY_TOKEN"),
-    "WHATSAPP_TOKEN": os.getenv("WHATSAPP_TOKEN")
-}
-
+# Load env variables
+VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
+WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Groq Model
@@ -31,7 +21,7 @@ chat = ChatGroq(
     temperature=0.4,
 )
 
-# Chat history list
+# Chat history
 chat_history = [SystemMessage(content="You are a helpful HR chatbot assistant.")]
 file_knowledge = ""
 
@@ -46,9 +36,7 @@ employees = [
     {"emp_id": 105, "emp_name": "Amirtha", "emp_dob": "05-09-1992", "emp_email":"amirtha987@gmail.com", "phone":9855544217, "emp_address": "No:6 Nehru Street, Hyderabad"}
 ]
 
-
-
-# OCR and File Extractors
+# OCR Helpers
 def extract_text_from_pdf(upload_path):
     doc = fitz.open(upload_path)
     return "\n".join(page.get_text() for page in doc)
@@ -61,35 +49,25 @@ def extract_text_from_image(upload_path):
     try:
         image = Image.open(upload_path)
         text = pytesseract.image_to_string(image)
-
-        if text.strip():
-            return text.strip()
-
-        return "[No visible text detected]"
+        return text.strip() if text.strip() else "[No visible text detected]"
     except Exception as e:
         return f"[Image processing failed: {e}]"
 
-
-
-# Chat Response function
+# Main Chat Response
 def get_chat_response(user_msg):
     global chat_history, file_knowledge
 
     chat_history.append(HumanMessage(content=user_msg))
     lower_msg = user_msg.lower()
 
-    # ---------------------------------------------------
-    # CHECK IF USER ASKS FOR LIST OF EMPLOYEE NAMES
-    # ---------------------------------------------------
-    if any(k in lower_msg for k in ["list", "employees", "employee names", "all employees"]):
+    # Employee list
+    if any(k in lower_msg for k in ["list employees", "employees list", "employee names", "all employees"]):
         emp_names = [emp["emp_name"] for emp in employees]
         reply = "Here are the names of all employees:\n\n- " + "\n- ".join(emp_names)
         chat_history.append(AIMessage(content=reply))
         return reply
 
-    # ---------------------------------------------------
-    # CHECK IF ASKING ABOUT SPECIFIC EMPLOYEE
-    # ---------------------------------------------------
+    # Specific employee
     for emp in employees:
         if emp["emp_name"].lower() in lower_msg:
             reply = (
@@ -103,24 +81,20 @@ def get_chat_response(user_msg):
             chat_history.append(AIMessage(content=reply))
             return reply
 
-    context = ""
+    # File content context
     file_text = file_knowledge.strip()
-
     if len(file_text) > 3000:
         file_text = file_text[:3000] + "\n...[Content Truncated]..."
 
-
+    context = ""
     if file_text:
-        context = (
-            "Here is shortened reference content from the uploaded file:\n"
-            + file_text
-            + "\n\n"
-        )
+        context = "Here is reference content from uploaded file:\n" + file_text + "\n\n"
 
     final_prompt = context + f"User Question: {user_msg}"
 
     ai_answer = chat.invoke([HumanMessage(content=final_prompt)])
     bot_reply = ai_answer.content
-
     chat_history.append(AIMessage(content=bot_reply))
+
     return bot_reply
+
