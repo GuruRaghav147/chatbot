@@ -11,10 +11,12 @@ def handler(request):
     # ----------------------------------
     # GET REQUEST → VERIFY WEBHOOK
     # ----------------------------------
-    if request.method == "GET":
-        mode = request.args.get("hub.mode")
-        challenge = request.args.get("hub.challenge")
-        token = request.args.get("hub.verify_token")
+    def handler(request):
+        if request.method == "GET":
+            mode = request.query_params.get("hub.mode")
+            challenge = request.query_params.get("hub.challenge")
+            token = request.query_params.get("hub.verify_token")
+
 
         if mode == "subscribe" and token == VERIFY_TOKEN:
             return {"status": 200, "body": challenge}
@@ -25,7 +27,8 @@ def handler(request):
     # POST REQUEST → RECEIVE MESSAGE
     # ----------------------------------
     if request.method == "POST":
-        data = request.json
+        data = request.get_json()
+
 
         try:
             message = data["entry"][0]["changes"][0]["value"]["messages"][0]
