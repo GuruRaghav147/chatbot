@@ -36,7 +36,7 @@ def verify_webhook():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
-
+    print("Webhook payload:", data)
     try:
         # Extract nested fields safely
         entry = data.get("entry", [])
