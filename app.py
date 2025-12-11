@@ -38,19 +38,37 @@ def webhook():
     data = request.get_json()
 
     try:
-        message = data["entry"][0]["changes"][0]["value"]["messages"][0]
-        sender = message["from"]
-        text = message["text"]["body"]
+        # Extract nested fields safely
+        entry = data.get("entry", [])
+        if not entry:
+            return "No entry", 200
 
+        changes = entry[0].get("changes", [])
+        if not changes:
+            return "No changes", 200
+
+        value = changes[0].get("value", {})
+
+        # Only process when incoming messages exist
+        messages = value.get("messages")
+        if not messages:
+            print("No incoming message (status update or delivery receipt)")
+            return "No message", 200
+
+        message = messages[0]
+        sender = message.get("from")
+        text = message.get("text", {}).get("body", "")
+
+        # Generate reply
         reply = get_chat_response(text)
 
+        # Send reply
         send_whatsapp_message(sender, reply)
 
     except Exception as e:
-        print("ERROR:", e)
+        print("ERROR processing webhook:", e)
 
     return "OK", 200
-
 
 # ----------------------------------------------------
 # SEND MESSAGE BACK TO WHATSAPP
