@@ -1,9 +1,9 @@
 services:
   - type: web
     name: chatbot
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    env: python
+    preInstall: "rm -f pyproject.toml poetry.lock"
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
     envVars:
       PYTHON_VERSION: 3.11.0
-
