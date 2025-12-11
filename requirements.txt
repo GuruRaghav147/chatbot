@@ -1,0 +1,10 @@
+Flask
+requests
+python-dotenv
+langchain-groq
+langchain-core
+Pillow
+python-docx
+PyMuPDF
+pytesseract
+gunicorn
