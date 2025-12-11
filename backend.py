@@ -17,8 +17,10 @@ pytesseract.pytesseract.tesseract_cmd = r"C:\Users\gururaghav.k\AppData\Local\Pr
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 
-with open(CONFIG_PATH, "r") as f:
-    config = json.load(f)
+config = {
+    "VERIFY_TOKEN": os.getenv("VERIFY_TOKEN"),
+    "WHATSAPP_TOKEN": os.getenv("WHATSAPP_TOKEN")
+}
 
 GROQ_API_KEY = config["GROQ_API_KEY"]
 
